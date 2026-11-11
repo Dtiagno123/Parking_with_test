@@ -87,3 +87,8 @@ constexpr uint8_t  ECRAN_ADRESSE_I2C   = 0x3C;    // à confirmer par le scan I2
 constexpr uint8_t  ECRAN_LARGEUR_PX    = 128;     // largeur de l'écran OLED
 constexpr uint8_t  ECRAN_HAUTEUR_PX    = 64;      // mettre 32 si seule la moitié de l'image s'affiche
 constexpr uint32_t SERIE_VITESSE_BAUDS = 115200;  // doit être égal à monitor_speed de platformio.ini
+
+// Durées de clignotement (en millisecondes)
+const unsigned long PERIODE_CLIGNO_RAPIDE_MS  = 250;
+const unsigned long PERIODE_CLIGNO_LENT_MS    = 1000;
+const unsigned long DUREE_BIP_COURT_MS        = 100;
