@@ -77,13 +77,13 @@ constexpr uint32_t DELAI_ANTIREBOND_MS = 20;   // un changement doit durer 20 ms
 constexpr uint32_t DELAI_FERMETURE_APRES_PASSAGE_MS  = 1500;   // zone libre après un passage
 constexpr uint32_t DELAI_FERMETURE_SANS_PASSAGE_MS   = 10000;  // voiture qui renonce, ou démarrage
 constexpr uint32_t PERIODE_MESSAGE_ETAT_MS           = 500;    // une ligne HB envoyée au PC
-constexpr uint32_t ECRAN_PERIODE_RAFRAICHISSEMENT_MS = 250;    // ≈ 4 images par seconde
+constexpr uint32_t PERIODE_ECRAN_MS = 250;    // ≈ 4 images par seconde
 
 // ---------------------------------------------------------------------
 //  Divers
 // ---------------------------------------------------------------------
 constexpr bool     IR_ACTIF_BAS        = true;    // OUT = LOW quand obstacle (à vérifier au fichier 7)
-constexpr uint8_t  ECRAN_ADRESSE_I2C   = 0x3C;    // à confirmer par le scan I2C du fichier 5
+constexpr uint8_t  ADRESSE_ECRAN_I2C   = 0x3C;    // à confirmer par le scan I2C du fichier 5
 constexpr uint8_t  ECRAN_LARGEUR_PX    = 128;     // largeur de l'écran OLED
 constexpr uint8_t  ECRAN_HAUTEUR_PX    = 64;      // mettre 32 si seule la moitié de l'image s'affiche
 constexpr uint32_t SERIE_VITESSE_BAUDS = 115200;  // doit être égal à monitor_speed de platformio.ini
