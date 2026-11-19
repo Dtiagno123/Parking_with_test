@@ -25,8 +25,8 @@ constexpr uint8_t PIN_LED_ROUGE = 25;   // LED rouge + résistance 220 Ω
 constexpr uint8_t PIN_BUZZER    = 33;   // buzzer actif
 
 // Boutons (reliés à la masse, résistance de tirage interne)
-constexpr uint8_t PIN_BOUTON_AU    = 16;   // arrêt d'urgence
-constexpr uint8_t PIN_BOUTON_REARM = 17;   // réarmement
+constexpr uint8_t PIN_BOUTON_AU    = 14;   // arrêt d'urgence
+constexpr uint8_t PIN_BOUTON_REARM = 12;   // réarmement
 
 // Capteurs ultrason HC-SR04 (ECHO passe par le pont diviseur 5 V -> 3,3 V)
 constexpr uint8_t PIN_US1_TRIG = 5;    // capteur 1 (avant la barrière) : déclenchement
@@ -69,7 +69,7 @@ constexpr uint32_t US_TIMEOUT_ECHO_US     = 12000;   // attente max de l'écho (
 // ---------------------------------------------------------------------
 //  Boutons
 // ---------------------------------------------------------------------
-constexpr uint32_t BOUTON_ANTIREBOND_MS = 20;   // un changement doit durer 20 ms pour être validé
+constexpr uint32_t DELAI_ANTIREBOND_MS = 20;   // un changement doit durer 20 ms pour être validé
 
 // ---------------------------------------------------------------------
 //  Temps (automate, journal, écran)
