@@ -60,10 +60,10 @@ constexpr uint16_t SERVO_FREQUENCE_HZ        = 50;    // fréquence de commande 
 constexpr float    US_SEUIL_PRESENCE_CM   = 12.0f;   // provisoire : à régler au fichier 6
 constexpr float    US_HYSTERESIS_CM       = 2.0f;    // marge pour déclarer « voiture partie »
 constexpr uint8_t  US_NB_CONFIRMATIONS    = 3;       // mesures d'affilée pour changer de décision
-constexpr float    US_DISTANCE_MIN_CM     = 2.0f;    // en dessous : mesure invalide
-constexpr float    US_DISTANCE_MAX_CM     = 200.0f;  // au-dessus : mesure invalide
-constexpr uint8_t  US_NB_INVALIDES_DEFAUT = 5;       // mesures invalides d'affilée -> capteur en défaut
-constexpr uint32_t US_PERIODE_MESURE_MS   = 60;      // une mesure toutes les 60 ms (alternance C1/C2)
+constexpr float    US_DIST_MIN_CM     = 2.0f;    // en dessous : mesure invalide
+constexpr float    US_DIST_MAX_CM     = 200.0f;  // au-dessus : mesure invalide
+constexpr uint8_t  US_MAX_ECHECS_AVANT_DEFAUT = 5;       // mesures invalides d'affilée -> capteur en défaut
+constexpr uint32_t US_PERIODE_ALTERNANCE_MS   = 60;      // une mesure toutes les 60 ms (alternance C1/C2)
 constexpr uint32_t US_TIMEOUT_ECHO_US     = 12000;   // attente max de l'écho (≈ 2 m aller-retour)
 
 // ---------------------------------------------------------------------

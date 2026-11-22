@@ -79,3 +79,25 @@
 1. **Scan I2C et affichage nominal** : Adresse `0x3C` détectée, affichage lisible des 4 lignes (état, passages, capteurs, message) et mise à jour fluide toutes les secondes[cite: 11].
 2. **Mode dégradé (SDA débranché + bouton EN)** : L'événement `ECRAN_ABSENT` est bien émis au démarrage via `journal` et le programme continue sans blocage ni plantage[cite: 11].
 3. **Performance (tours de boucle/s)** : Cadence de boucle élevée maintenue grâce au rafraîchissement limité à 4 Hz (`PERIODE_ECRAN_MS = 250`)[cite: 11, 30]
+---
+
+## Fichier 6 : Capteurs ultrasons (capteur_ultrason.h / .cpp)
+- **Date** : 22 Novembre 2026
+- **Matériel testé** : 2 capteurs HC-SR04 alimentés en 5 V (TRIG sur GPIO 5 et 19, ECHO via ponts diviseurs 1 kΩ / 2 kΩ vers GPIO 18 et 23) + murs de référence en carton à ~20 cm[cite: 12].
+
+### Essais réalisés (les 8 cas du cahier des charges) :
+1. **Rien devant** : distance stable correspondant au mur (~20 cm), présence à 0, aucun défaut[cite: 13].
+2. **Voiture posée devant** : détection confirmée après 3 mesures consécutives (< 0,5 s)[cite: 13].
+3. **Voiture déplacée lentement autour du seuil** : l'hystérésis (2 cm) empêche tout clignotement de la décision[cite: 13].
+4. **Fil ECHO débranché** : passage en défaut verrouillé après 5 mesures invalides consécutives ; événement `DEFAUT_CAPTEUR` émis une seule fois[cite: 13].
+5. **Fil ECHO rebranché** : le défaut reste verrouillé tant qu'il n'y a pas de réarmement[cite: 13].
+6. **Appui réarmement avec fil rebranché** : défaut effacé et reprise normale[cite: 13].
+7. **Appui réarmement avec fil toujours débranché** : défaut maintenu (réarmement refusé tant que la mesure n'est pas valide)[cite: 13].
+8. **Main devant C1 uniquement** : seul C1 détecte la présence, aucune interférence acoustique sur C2 grâce à l'alternance toutes les 60 ms[cite: 13].
+
+### Problèmes rencontrés et résolus :
+- **Téléversement bloqué (`esptool`)** : résolu en complétant explicitement `[env:essai_ultrasons]` dans `platformio.ini` avec `upload_speed = 115200`[cite: 31].
+- **Valeurs identiques entre C1 et C2 lors des premiers essais** : corrigé en séparant physiquement les deux ponts diviseurs sur la breadboard et en orientant chaque capteur vers son propre mur de référence.
+
+### Résultat :
+- Module validé le 22/11/2026.
