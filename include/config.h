@@ -35,7 +35,7 @@ constexpr uint8_t PIN_US2_TRIG = 19;   // capteur 2 (après la barrière) : déc
 constexpr uint8_t PIN_US2_ECHO = 23;   // capteur 2 : retour d'écho
 
 // Détecteur d'obstacle infrarouge (alimenté en 3,3 V, PAS en 5 V)
-constexpr uint8_t PIN_IR_OUT = 32;     // sortie OUT du module
+constexpr uint8_t PIN_IR_OBSTACLE = 32;     // sortie OUT du module
 
 // Servomoteur SG90
 constexpr uint8_t PIN_SERVO = 13;      // fil orange (signal de commande)
