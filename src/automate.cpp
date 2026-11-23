@@ -7,19 +7,19 @@ enum SensPassage {
     SENS_SORTIE
 };
 
-static EtatAutomate etat_courant   = ETAT_REPOS;
-static SensPassage  sens_en_cours  = SENS_AUCUN;
-static int          places_max     = PARKING_CAPACITE_MAX;
-static int          places_dispo   = PARKING_CAPACITE_MAX;
-static uint32_t     debut_tempo_ms = 0;
+static EtatAutomate etat_courant      = ETAT_REPOS;
+static SensPassage  sens_en_cours     = SENS_AUCUN;
+static int          places_max        = PARKING_CAPACITE_MAX;
+static int          places_dispo      = PARKING_CAPACITE_MAX;
+static uint32_t     debut_tempo_ms    = 0;
 static bool         vehicule_vu_apres = false;
 
 static void changer_etat(EtatAutomate nouvel_etat, uint32_t temps_ms,
                          const char* evt, const char* msg,
                          SortiesAutomate& out) {
-    etat_courant   = nouvel_etat;
-    debut_tempo_ms = temps_ms;
-    out.evenement  = evt;
+    etat_courant    = nouvel_etat;
+    debut_tempo_ms  = temps_ms;
+    out.evenement   = evt;
     out.message_evt = msg;
 }
 
@@ -73,7 +73,6 @@ SortiesAutomate automate_pas(const EntreesAutomate& ent) {
     // 3. Transitions selon l'état courant
     switch (etat_courant) {
         case ETAT_ARRET_URGENCE:
-            out.figer_barriere = true;
             if (ent.impulsion_rearmement && !ent.defaut_capteur) {
                 changer_etat(ETAT_FERMETURE, ent.temps_ms,
                              "REARMEMENT", "Sortie arret urgence -> fermeture", out);
@@ -81,7 +80,6 @@ SortiesAutomate automate_pas(const EntreesAutomate& ent) {
             break;
 
         case ETAT_DEFAUT:
-            out.angle_cible_barriere = BARRIERE_ANGLE_FERME_DEG;
             if (ent.impulsion_rearmement && !ent.defaut_capteur) {
                 changer_etat(ETAT_REPOS, ent.temps_ms,
                              "REARMEMENT", "Defaut acquitte -> repos", out);
@@ -89,7 +87,6 @@ SortiesAutomate automate_pas(const EntreesAutomate& ent) {
             break;
 
         case ETAT_REPOS:
-            out.angle_cible_barriere = BARRIERE_ANGLE_FERME_DEG;
             vehicule_vu_apres = false;
 
             if (ent.impulsion_force) {
@@ -108,7 +105,6 @@ SortiesAutomate automate_pas(const EntreesAutomate& ent) {
             break;
 
         case ETAT_OUVERTURE:
-            out.angle_cible_barriere = BARRIERE_ANGLE_OUVERT_DEG;
             if (ent.barriere_arrivee) {
                 changer_etat(ETAT_ATTENTE_PASSAGE, ent.temps_ms,
                              "BARRIERE_OUVERTE", "Attente passage vehicule", out);
@@ -116,8 +112,6 @@ SortiesAutomate automate_pas(const EntreesAutomate& ent) {
             break;
 
         case ETAT_ATTENTE_PASSAGE:
-            out.angle_cible_barriere = BARRIERE_ANGLE_OUVERT_DEG;
-
             // Détection du franchissement du second capteur
             if (sens_en_cours == SENS_ENTREE && ent.presence_sortie) {
                 vehicule_vu_apres = true;
@@ -144,8 +138,6 @@ SortiesAutomate automate_pas(const EntreesAutomate& ent) {
             break;
 
         case ETAT_FERMETURE:
-            out.angle_cible_barriere = BARRIERE_ANGLE_FERME_DEG;
-
             if (ent.obstacle_ir) {
                 changer_etat(ETAT_REOUVERTURE_OBSTACLE, ent.temps_ms,
                              "OBSTACLE_FERMETURE", "Obstacle IR -> reouverture", out);
@@ -156,7 +148,6 @@ SortiesAutomate automate_pas(const EntreesAutomate& ent) {
             break;
 
         case ETAT_REOUVERTURE_OBSTACLE:
-            out.angle_cible_barriere = BARRIERE_ANGLE_OUVERT_DEG;
             if (ent.barriere_arrivee) {
                 changer_etat(ETAT_ATTENTE_PASSAGE, ent.temps_ms,
                              "REOUVERTURE_TERMINEE", "Attente degagement obstacle", out);
@@ -164,7 +155,19 @@ SortiesAutomate automate_pas(const EntreesAutomate& ent) {
             break;
     }
 
+    // 4. Mise à jour des sorties cohérente avec l'état final après transition
     out.etat          = etat_courant;
     out.places_libres = places_dispo;
+
+    if (etat_courant == ETAT_OUVERTURE ||
+        etat_courant == ETAT_ATTENTE_PASSAGE ||
+        etat_courant == ETAT_REOUVERTURE_OBSTACLE) {
+        out.angle_cible_barriere = BARRIERE_ANGLE_OUVERT_DEG;
+    } else {
+        out.angle_cible_barriere = BARRIERE_ANGLE_FERME_DEG;
+    }
+
+    out.figer_barriere = (etat_courant == ETAT_ARRET_URGENCE);
+
     return out;
 }

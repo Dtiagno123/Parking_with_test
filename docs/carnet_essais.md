@@ -139,3 +139,24 @@
 
 ### Résultat :
 - Module validé le 23/11/2026.
+---
+
+## Fichiers 9 et 10 : Automate du parking et tests unitaires PC
+- **Date** : 23 Novembre 2026
+- **Environnement de test** : Compilation native sur PC (`[env:native]`, framework Unity) sans dépendance matérielle ESP32.
+
+### Essais unitaires réalisés (`pio test -e native`) :
+1. **`test_etat_initial_repos`** : vérification de l'état `REPOS`, barrière à `0°` et compteur initialisé à `capacite_max`.
+2. **`test_cycle_entree_complet_decremente_places`** : séquence complète entrée -> ouverture -> passage -> temporisation -> fermeture -> décrémentation des places.
+3. **`test_entree_sans_franchissement_ne_decremente_pas`** : vérification qu'un véhicule qui recule avant le second capteur ne fausse pas le compteur.
+4. **`test_parking_complet_refuse_entree_mais_accepte_sortie`** : blocage des entrées à `0` place libre tout en autorisant les sorties.
+5. **`test_obstacle_ir_pendant_fermeture_reouvre`** : réouverture immédiate en cas de détection infrarouge durant la descente.
+6. **`test_arret_urgence_fige_et_rearmement`** : figement immédiat de la barrière et sortie par réarmement.
+7. **`test_defaut_capteur_bloque_et_rearmement`** : passage en `DEFAUT`, blocage du réarmement tant que le défaut persiste et retour au `REPOS` après acquittement.
+
+### Problèmes rencontrés et résolus :
+- **Cohérence des sorties lors d'une transition** : mise à jour de `angle_cible_barriere` et `figer_barriere` calculée à la fin de `automate_pas()` d'après l'état final.
+- **Configuration `platformio.ini`** : ajout de `test_build_src = yes` et isolation de `[env:native]` vis-à-vis de la configuration ESP32.
+
+### Résultat :
+- 7 tests sur 7 validés le 23/11/2026 (`0 failed`).

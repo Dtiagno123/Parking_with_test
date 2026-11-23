@@ -76,7 +76,6 @@ constexpr uint32_t DELAI_ANTIREBOND_MS = 20;   // un changement doit durer 20 ms
 // ---------------------------------------------------------------------
 constexpr uint32_t TEMPO_ATTENTE_PASSAGE_MS  = 1500;   // zone libre après un passage
 constexpr uint32_t TEMPO_TIMEOUT_PASSAGE_MS   = 10000;  // voiture qui renonce, ou démarrage
-constexpr uint32_t PERIODE_MESSAGE_ETAT_MS           = 500;    // une ligne HB envoyée au PC
 constexpr uint32_t PERIODE_ECRAN_MS = 250;    // ≈ 4 images par seconde
 constexpr uint32_t PERIODE_MESSAGE_ETAT_MS           = 500;    // une ligne HB envoyée au PC
 constexpr uint32_t PARKING_CAPACITE_MAX        = 5;
