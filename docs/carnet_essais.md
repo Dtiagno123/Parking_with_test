@@ -101,3 +101,41 @@
 
 ### Résultat :
 - Module validé le 22/11/2026.
+---
+
+## Fichier 7 : Détecteur d'obstacle infrarouge (detecteur_ir.h / .cpp)
+- **Date** : 23 Novembre 2026
+- **Matériel testé** : Module détecteur d'obstacle IR alimenté sur le rail 3,3 V, sortie OUT reliée au GPIO 32[cite: 14].
+- **Logique vérifiée** : `IR_ACTIF_BAS = true` (OUT passe à `LOW` et la LED du module s'allume lorsqu'un obstacle est détecté)[cite: 14, 15].
+
+### Essais réalisés :
+1. **Rien sous la barrière** : affiche `libre` en permanence, compteur de changements immobile à 0.
+2. **Voiture posée dessous** : affiche `obstacle` en permanence après réglage de la sensibilité via le potentiomètre (détecte la voiture sans détecter le sol)[cite: 14, 15].
+3. **Main passée 10 fois** : compteur de changements exactement à 20 (10 apparitions + 10 disparitions)[cite: 15].
+4. **Fil OUT débranché (GPIO 32)** : le système affiche `obstacle` (l'entrée non tirée lit `LOW`).
+
+### Note de sûreté (AMDEC) :
+- **Coupure du fil OUT** : comportement sûr (*fail-safe*), car l'absence de signal est interprétée comme un obstacle, ce qui bloque la fermeture de la barrière.
+- **Mode de défaillance critique non détecté** : si le capteur tombe en panne avec sa sortie bloquée à l'état haut (`HIGH` / « libre ») ou si sa LED IR grille, rien ne permet à l'ESP32 de détecter la panne ; la barrière risquerait de descendre sur un véhicule[cite: 14]. Piste d'amélioration (V2) : effectuer un autotest en vérifiant que le capteur détecte la barrière elle-même lorsqu'elle est fermée[cite: 14].
+
+### Résultat :
+- Module validé le 23/11/2026[cite: 15].
+---
+
+## Fichier 8 : Barrière motorisée (barriere.h / .cpp)
+- **Date** : 23 Novembre 2026
+- **Matériel testé** : Servomoteur SG90 alimenté en 5 V (VIN) et GND, signal PWM sur GPIO 13 (50 Hz, impulsions 500–2400 µs), accompagné de la LED jaune de signalisation (GPIO 26).
+
+### Essais réalisés :
+1. **Déplacement de `0°` à `90°`** : mouvement fluide degré par degré sans blocage ni à-coup, suivi de l'émission de `BARRIERE_ARRIVEE`.
+2. **Inversion de consigne en cours de mouvement** : envoi de `90` pendant une descente vers `0` ; la barrière repart immédiatement dans l'autre sens.
+3. **Arrêt d'urgence (`stop`) en cours de mouvement** : figement instantané de la position (`BARRIERE_STOP`).
+4. **Exécution non bloquante** : la LED jaune continue de clignoter régulièrement pendant toute la durée des déplacements.
+5. **Endurance (20 allers-retours consécutifs)** : fonctionnement stable sans redémarrage de l'ESP32 ni surchauffe.
+
+### Problèmes rencontrés et résolus :
+- **Configuration `platformio.ini`** : ajout explicite des paramètres de carte et de `upload_speed = 115200` dans `[env:essai_barriere]`.
+- **Délai entre pas** : réglé à `BARRIERE_DELAI_PAS_MS = 20` ms dans `include/config.h` pour adoucir le déplacement et limiter l'appel de courant au démarrage.
+
+### Résultat :
+- Module validé le 23/11/2026.

@@ -38,7 +38,7 @@ constexpr uint8_t PIN_US2_ECHO = 23;   // capteur 2 : retour d'écho
 constexpr uint8_t PIN_IR_OBSTACLE = 32;     // sortie OUT du module
 
 // Servomoteur SG90
-constexpr uint8_t PIN_SERVO = 13;      // fil orange (signal de commande)
+constexpr uint8_t PIN_SERVO_BARRIERE= 13;      // fil orange (signal de commande)
 
 // Bus I2C de l'écran OLED
 constexpr uint8_t PIN_I2C_SDA = 21;    // ligne de données
@@ -49,7 +49,7 @@ constexpr uint8_t PIN_I2C_SCL = 22;    // ligne d'horloge
 // ---------------------------------------------------------------------
 constexpr int      BARRIERE_ANGLE_FERME_DEG  = 0;     // provisoire : à régler au fichier 8
 constexpr int      BARRIERE_ANGLE_OUVERT_DEG = 90;    // provisoire : à régler au fichier 8
-constexpr uint32_t BARRIERE_PAS_MS           = 12;    // délai entre deux pas de 1° (mouvement doux)
+constexpr uint32_t BARRIERE_DELAI_PAS_MS           = 12;    // délai entre deux pas de 1° (mouvement doux)
 constexpr uint16_t SERVO_IMPULSION_MIN_US    = 500;   // largeur d'impulsion pour 0° (SG90)
 constexpr uint16_t SERVO_IMPULSION_MAX_US    = 2400;  // largeur d'impulsion pour 180° (SG90)
 constexpr uint16_t SERVO_FREQUENCE_HZ        = 50;    // fréquence de commande standard d'un servo
