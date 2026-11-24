@@ -160,3 +160,19 @@
 
 ### Résultat :
 - 7 tests sur 7 validés le 23/11/2026 (`0 failed`).
+---
+
+## Fichier 9 : Sûreté matérielle — watchdog et cause de redémarrage (surete.h / .cpp)
+- **Date** : 24 Novembre 2026
+- **Matériel testé** : Carte ESP32 DOIT DevKit V1 seule sur port USB.
+
+### Essais réalisés (`essai_surete`) :
+1. **Branchement USB** : événement `DEMARRAGE,MISE_SOUS_TENSION` émis au démarrage.
+2. **Blocage volontaire (`bloque`)** : gel de `loop()`, déclenchement du watchdog au bout d'environ 5 s et redémarrage automatique avec la cause `DEMARRAGE,WATCHDOG`.
+3. **Bouton matériel `EN`** : redémarrage immédiat avec la cause `MISE_SOUS_TENSION`.
+
+### Problèmes rencontrés et résolus :
+- **Vitesse de téléversement dans `platformio.ini`** : correction de `upload_speed = 265200` en `115200` pour éviter la perte de connexion pendant le flashage.
+
+### Résultat :
+- Module validé le 24/11/2026.
