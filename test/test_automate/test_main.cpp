@@ -2,185 +2,254 @@
 #include "automate.h"
 #include "config.h"
 
-static EntreesAutomate entrees_vierges(uint32_t temps_ms) {
+static EntreesAutomate entrees_base(uint32_t temps_ms) {
     EntreesAutomate e;
-    e.temps_ms             = temps_ms;
-    e.presence_entree      = false;
-    e.presence_sortie      = false;
-    e.defaut_capteur       = false;
-    e.obstacle_ir          = false;
-    e.impulsion_urgence    = false;
-    e.impulsion_rearmement = false;
-    e.impulsion_force      = false;
-    e.barriere_arrivee     = false;
+    e.temps_ms              = temps_ms;
+    e.voiture_c1            = false;
+    e.voiture_c2            = false;
+    e.obstacle_ir           = false;
+    e.defaut_c1             = false;
+    e.defaut_c2             = false;
+    e.capteurs_sains        = true;
+    e.appui_urgence         = false;
+    e.appui_rearmement      = false;
+    e.angle_actuel_barriere = BARRIERE_ANGLE_FERME_DEG;
     return e;
 }
 
 void setUp(void) {
-    automate_init(5);
+    automate_init();
 }
 
 void tearDown(void) {}
 
-void test_etat_initial_repos(void) {
-    EntreesAutomate e = entrees_vierges(0);
+// 1. Au démarrage, l'automate est « ouverte » et se ferme après 10 s de zone libre.
+void test_01_demarrage_ouverte_puis_fermeture_10s(void) {
+    EntreesAutomate e = entrees_base(1000);
+    e.angle_actuel_barriere = BARRIERE_ANGLE_OUVERT_DEG;
     SortiesAutomate s = automate_pas(e);
-    TEST_ASSERT_EQUAL(ETAT_REPOS, s.etat);
+    TEST_ASSERT_EQUAL(ETAT_OUVERTE, s.etat);
+    TEST_ASSERT_EQUAL(BARRIERE_ANGLE_OUVERT_DEG, s.angle_cible_barriere);
+
+    e = entrees_base(1000 + TEMPO_TIMEOUT_PASSAGE_MS);
+    e.angle_actuel_barriere = BARRIERE_ANGLE_OUVERT_DEG;
+    s = automate_pas(e);
+    TEST_ASSERT_EQUAL(ETAT_FERMETURE, s.etat);
     TEST_ASSERT_EQUAL(BARRIERE_ANGLE_FERME_DEG, s.angle_cible_barriere);
-    TEST_ASSERT_EQUAL(5, s.places_libres);
 }
 
-void test_cycle_entree_complet_decremente_places(void) {
-    EntreesAutomate e = entrees_vierges(100);
-    e.presence_entree = true;
+// 2. Passage nominal: fermée -> ouverture -> ouverte -> fermeture -> fermée, passages = 1.
+void test_02_passage_nominal_compteur_1(void) {
+    // On amène d'abord l'automate en ETAT_FERMEE
+    EntreesAutomate e = entrees_base(0);
+    e.angle_actuel_barriere = BARRIERE_ANGLE_OUVERT_DEG;
+    automate_pas(e);
+    e = entrees_base(TEMPO_TIMEOUT_PASSAGE_MS);
+    e.angle_actuel_barriere = BARRIERE_ANGLE_OUVERT_DEG;
+    automate_pas(e);
+    e = entrees_base(12000);
+    e.angle_actuel_barriere = BARRIERE_ANGLE_FERME_DEG;
     SortiesAutomate s = automate_pas(e);
-    TEST_ASSERT_EQUAL(ETAT_OUVERTURE, s.etat);
-    TEST_ASSERT_EQUAL(BARRIERE_ANGLE_OUVERT_DEG, s.angle_cible_barriere);
+    TEST_ASSERT_EQUAL(ETAT_FERMEE, s.etat);
 
-    // Fin ouverture
-    e = entrees_vierges(1200);
-    e.barriere_arrivee = true;
-    s = automate_pas(e);
-    TEST_ASSERT_EQUAL(ETAT_ATTENTE_PASSAGE, s.etat);
-
-    // Véhicule franchit le capteur sortie
-    e = entrees_vierges(1500);
-    e.presence_sortie = true;
-    s = automate_pas(e);
-    TEST_ASSERT_EQUAL(ETAT_ATTENTE_PASSAGE, s.etat);
-
-    // Voie dégagée puis attente de TEMPO_ATTENTE_PASSAGE_MS
-    e = entrees_vierges(2000);
-    s = automate_pas(e);
-    TEST_ASSERT_EQUAL(ETAT_ATTENTE_PASSAGE, s.etat);
-
-    e = entrees_vierges(2000 + TEMPO_ATTENTE_PASSAGE_MS);
-    s = automate_pas(e);
-    TEST_ASSERT_EQUAL(ETAT_FERMETURE, s.etat);
-    TEST_ASSERT_EQUAL(4, s.places_libres);
-
-    // Fin fermeture
-    e = entrees_vierges(6500);
-    e.barriere_arrivee = true;
-    s = automate_pas(e);
-    TEST_ASSERT_EQUAL(ETAT_REPOS, s.etat);
-}
-
-void test_entree_sans_franchissement_ne_decremente_pas(void) {
-    EntreesAutomate e = entrees_vierges(100);
-    e.presence_entree = true;
-    automate_pas(e);
-
-    e = entrees_vierges(1000);
-    e.barriere_arrivee = true;
-    automate_pas(e);
-
-    // La voiture recule sans passer devant le capteur sortie
-    e = entrees_vierges(1200);
-    automate_pas(e);
-
-    e = entrees_vierges(1200 + TEMPO_ATTENTE_PASSAGE_MS);
-    SortiesAutomate s = automate_pas(e);
-    TEST_ASSERT_EQUAL(ETAT_FERMETURE, s.etat);
-    TEST_ASSERT_EQUAL(5, s.places_libres);
-}
-
-void test_parking_complet_refuse_entree_mais_accepte_sortie(void) {
-    automate_init(1); // 1 seule place
-
-    // Entrée d'un véhicule -> 0 place
-    EntreesAutomate e = entrees_vierges(100);
-    e.presence_entree = true;
-    automate_pas(e);
-    e = entrees_vierges(500); e.barriere_arrivee = true; automate_pas(e);
-    e = entrees_vierges(600); e.presence_sortie = true; automate_pas(e);
-    e = entrees_vierges(700); automate_pas(e);
-    e = entrees_vierges(700 + TEMPO_ATTENTE_PASSAGE_MS); automate_pas(e);
-    e = entrees_vierges(5000); e.barriere_arrivee = true;
-    SortiesAutomate s = automate_pas(e);
-    TEST_ASSERT_EQUAL(0, s.places_libres);
-
-    // Deuxième véhicule en entrée -> refusé (reste au REPOS)
-    e = entrees_vierges(5100);
-    e.presence_entree = true;
-    s = automate_pas(e);
-    TEST_ASSERT_EQUAL(ETAT_REPOS, s.etat);
-
-    // Véhicule en sortie -> autorisé !
-    e = entrees_vierges(5200);
-    e.presence_sortie = true;
+    // Voiture devant C1 -> OUVERTURE
+    e = entrees_base(13000);
+    e.voiture_c1 = true;
     s = automate_pas(e);
     TEST_ASSERT_EQUAL(ETAT_OUVERTURE, s.etat);
-}
 
-void test_obstacle_ir_pendant_fermeture_reouvre(void) {
-    EntreesAutomate e = entrees_vierges(100);
-    e.impulsion_force = true;
+    // Angle atteint -> OUVERTE
+    e = entrees_base(14200);
+    e.angle_actuel_barriere = BARRIERE_ANGLE_OUVERT_DEG;
+    s = automate_pas(e);
+    TEST_ASSERT_EQUAL(ETAT_OUVERTE, s.etat);
+
+    // Voiture devant C2
+    e = entrees_base(15000);
+    e.voiture_c2 = true;
+    e.angle_actuel_barriere = BARRIERE_ANGLE_OUVERT_DEG;
     automate_pas(e);
 
-    e = entrees_vierges(1000); e.barriere_arrivee = true; automate_pas(e);
-    e = entrees_vierges(1100); automate_pas(e);
-    e = entrees_vierges(1100 + TEMPO_ATTENTE_PASSAGE_MS);
+    // Zone libre pendant 1,5 s -> FERMETURE et passages == 1
+    e = entrees_base(16000);
+    e.angle_actuel_barriere = BARRIERE_ANGLE_OUVERT_DEG;
+    automate_pas(e);
+
+    e = entrees_base(16000 + TEMPO_ATTENTE_PASSAGE_MS);
+    e.angle_actuel_barriere = BARRIERE_ANGLE_OUVERT_DEG;
+    s = automate_pas(e);
+    TEST_ASSERT_EQUAL(ETAT_FERMETURE, s.etat);
+    TEST_ASSERT_EQUAL(1, s.passages);
+
+    // Fin de fermeture -> FERMEE
+    e = entrees_base(19000);
+    e.angle_actuel_barriere = BARRIERE_ANGLE_FERME_DEG;
+    s = automate_pas(e);
+    TEST_ASSERT_EQUAL(ETAT_FERMEE, s.etat);
+}
+
+// 3. Voiture qui renonce (capteur 1 puis plus rien): fermeture après 10 s, compteur inchangé.
+void test_03_voiture_renonce_fermeture_10s(void) {
+    // Mise en état FERMEE
+    EntreesAutomate e = entrees_base(0);
+    e.angle_actuel_barriere = BARRIERE_ANGLE_OUVERT_DEG;
+    automate_pas(e);
+    e = entrees_base(TEMPO_TIMEOUT_PASSAGE_MS);
+    e.angle_actuel_barriere = BARRIERE_ANGLE_OUVERT_DEG;
+    automate_pas(e);
+    e = entrees_base(12000);
+    automate_pas(e);
+
+    // Voiture devant C1 puis recule sans toucher C2
+    e = entrees_base(13000); e.voiture_c1 = true; automate_pas(e);
+    e = entrees_base(14000); e.angle_actuel_barriere = BARRIERE_ANGLE_OUVERT_DEG; automate_pas(e);
+    e = entrees_base(15000); e.angle_actuel_barriere = BARRIERE_ANGLE_OUVERT_DEG; automate_pas(e);
+
+    e = entrees_base(15000 + TEMPO_TIMEOUT_PASSAGE_MS);
+    e.angle_actuel_barriere = BARRIERE_ANGLE_OUVERT_DEG;
     SortiesAutomate s = automate_pas(e);
     TEST_ASSERT_EQUAL(ETAT_FERMETURE, s.etat);
+    TEST_ASSERT_EQUAL(0, s.passages);
+}
 
-    // Obstacle IR détecté en pleine fermeture
-    e = entrees_vierges(4500);
+// 4. Obstacle pendant la fermeture: retour immédiat en ouverture, avec un bip.
+void test_04_obstacle_fermeture_reouvre_avec_bip(void) {
+    EntreesAutomate e = entrees_base(0);
+    e.angle_actuel_barriere = BARRIERE_ANGLE_OUVERT_DEG;
+    automate_pas(e);
+    e = entrees_base(TEMPO_TIMEOUT_PASSAGE_MS);
+    e.angle_actuel_barriere = BARRIERE_ANGLE_OUVERT_DEG;
+    automate_pas(e); // Passe en ETAT_FERMETURE
+
+    e = entrees_base(10500);
+    e.angle_actuel_barriere = 45;
     e.obstacle_ir = true;
-    s = automate_pas(e);
-    TEST_ASSERT_EQUAL(ETAT_REOUVERTURE_OBSTACLE, s.etat);
+    SortiesAutomate s = automate_pas(e);
+    TEST_ASSERT_EQUAL(ETAT_OUVERTURE, s.etat);
+    TEST_ASSERT_TRUE(s.bip_court);
     TEST_ASSERT_EQUAL(BARRIERE_ANGLE_OUVERT_DEG, s.angle_cible_barriere);
 }
 
-void test_arret_urgence_fige_et_rearmement(void) {
-    EntreesAutomate e = entrees_vierges(100);
-    e.presence_entree = true;
+// 5. Voiture arrêtée sous la barrière : jamais de fermeture tant que l'IR la voit.
+void test_05_voiture_arretee_sous_barriere_pas_de_fermeture(void) {
+    EntreesAutomate e = entrees_base(0);
+    e.angle_actuel_barriere = BARRIERE_ANGLE_OUVERT_DEG;
+    e.obstacle_ir = true;
     automate_pas(e);
 
-    // Appui arrêt d'urgence en pleine ouverture
-    e = entrees_vierges(300);
-    e.impulsion_urgence = true;
+    e = entrees_base(50000); // Bien au-delà de 10 s
+    e.angle_actuel_barriere = BARRIERE_ANGLE_OUVERT_DEG;
+    e.obstacle_ir = true;
+    SortiesAutomate s = automate_pas(e);
+    TEST_ASSERT_EQUAL(ETAT_OUVERTE, s.etat);
+}
+
+// 6. Défaut capteur en position fermée: état défaut, angle cible = ouvert.
+void test_06_defaut_capteur_en_fermee_repli_ouvert(void) {
+    EntreesAutomate e = entrees_base(0);
+    e.angle_actuel_barriere = BARRIERE_ANGLE_OUVERT_DEG;
+    automate_pas(e);
+    e = entrees_base(TEMPO_TIMEOUT_PASSAGE_MS);
+    e.angle_actuel_barriere = BARRIERE_ANGLE_OUVERT_DEG;
+    automate_pas(e);
+    e = entrees_base(12000);
+    automate_pas(e); // ETAT_FERMEE
+
+    e = entrees_base(13000);
+    e.defaut_c1 = true;
+    e.capteurs_sains = false;
+    SortiesAutomate s = automate_pas(e);
+    TEST_ASSERT_EQUAL(ETAT_DEFAUT, s.etat);
+    TEST_ASSERT_EQUAL(BARRIERE_ANGLE_OUVERT_DEG, s.angle_cible_barriere);
+}
+
+// 7. Réarmement pendant que le capteur est encore en panne: refusé, reste en défaut.
+void test_07_rearmement_refuse_si_capteur_en_panne(void) {
+    EntreesAutomate e = entrees_base(100);
+    e.defaut_c1 = true;
+    e.capteurs_sains = false;
+    automate_pas(e);
+
+    e = entrees_base(200);
+    e.defaut_c1 = true;
+    e.capteurs_sains = false;
+    e.appui_rearmement = true;
+    SortiesAutomate s = automate_pas(e);
+    TEST_ASSERT_EQUAL(ETAT_DEFAUT, s.etat);
+    TEST_ASSERT_FALSE(s.effacer_defauts_capteurs);
+}
+
+// 8. Réarmement après réparation: sortie du défaut et ordre d'effacer les défauts capteurs.
+void test_08_rearmement_accepte_apres_reparation(void) {
+    EntreesAutomate e = entrees_base(100);
+    e.defaut_c1 = true;
+    e.capteurs_sains = false;
+    automate_pas(e);
+
+    e = entrees_base(200);
+    e.defaut_c1 = false;
+    e.capteurs_sains = true;
+    e.appui_rearmement = true;
+    SortiesAutomate s = automate_pas(e);
+    TEST_ASSERT_EQUAL(ETAT_OUVERTURE, s.etat);
+    TEST_ASSERT_TRUE(s.effacer_defauts_capteurs);
+}
+
+// 9. Arrêt d'urgence en pleine ouverture: barrière figée, puis reprise au réarmement.
+void test_09_arret_urgence_fige_et_reprise(void) {
+    EntreesAutomate e = entrees_base(100);
+    e.appui_urgence = true;
     SortiesAutomate s = automate_pas(e);
     TEST_ASSERT_EQUAL(ETAT_ARRET_URGENCE, s.etat);
     TEST_ASSERT_TRUE(s.figer_barriere);
 
-    // Réarmement -> passe en fermeture
-    e = entrees_vierges(800);
-    e.impulsion_rearmement = true;
+    e = entrees_base(500);
+    e.appui_rearmement = true;
     s = automate_pas(e);
-    TEST_ASSERT_EQUAL(ETAT_FERMETURE, s.etat);
+    TEST_ASSERT_EQUAL(ETAT_OUVERTURE, s.etat);
     TEST_ASSERT_FALSE(s.figer_barriere);
 }
 
-void test_defaut_capteur_bloque_et_rearmement(void) {
-    EntreesAutomate e = entrees_vierges(100);
-    e.defaut_capteur = true;
+// 10. Arrêt d'urgence puis réarmement alors qu'un capteur est en défaut : passage en défaut.
+void test_10_arret_urgence_rearmement_avec_defaut_capteur(void) {
+    EntreesAutomate e = entrees_base(100);
+    e.appui_urgence = true;
+    automate_pas(e);
+
+    e = entrees_base(500);
+    e.defaut_c2 = true;
+    e.capteurs_sains = false;
+    e.appui_rearmement = true;
     SortiesAutomate s = automate_pas(e);
     TEST_ASSERT_EQUAL(ETAT_DEFAUT, s.etat);
-
-    // Réarmement tant que le défaut est présent -> bloqué en DEFAUT
-    e = entrees_vierges(200);
-    e.defaut_capteur = true;
-    e.impulsion_rearmement = true;
-    s = automate_pas(e);
-    TEST_ASSERT_EQUAL(ETAT_DEFAUT, s.etat);
-
-    // Défaut disparu + réarmement -> retour au REPOS
-    e = entrees_vierges(300);
-    e.defaut_capteur = false;
-    e.impulsion_rearmement = true;
-    s = automate_pas(e);
-    TEST_ASSERT_EQUAL(ETAT_REPOS, s.etat);
 }
 
-int main(int argc, char** argv) {
+// 11. Un défaut capteur pendant un arrêt d'urgence ne fait pas quitter l'arrêt d'urgence.
+void test_11_defaut_pendant_arret_urgence_reste_en_urgence(void) {
+    EntreesAutomate e = entrees_base(100);
+    e.appui_urgence = true;
+    automate_pas(e);
+
+    e = entrees_base(300);
+    e.defaut_c1 = true;
+    e.capteurs_sains = false;
+    SortiesAutomate s = automate_pas(e);
+    TEST_ASSERT_EQUAL(ETAT_ARRET_URGENCE, s.etat);
+    TEST_ASSERT_TRUE(s.figer_barriere);
+}
+
+int main(void) {
     UNITY_BEGIN();
-    RUN_TEST(test_etat_initial_repos);
-    RUN_TEST(test_cycle_entree_complet_decremente_places);
-    RUN_TEST(test_entree_sans_franchissement_ne_decremente_pas);
-    RUN_TEST(test_parking_complet_refuse_entree_mais_accepte_sortie);
-    RUN_TEST(test_obstacle_ir_pendant_fermeture_reouvre);
-    RUN_TEST(test_arret_urgence_fige_et_rearmement);
-    RUN_TEST(test_defaut_capteur_bloque_et_rearmement);
+    RUN_TEST(test_01_demarrage_ouverte_puis_fermeture_10s);
+    RUN_TEST(test_02_passage_nominal_compteur_1);
+    RUN_TEST(test_03_voiture_renonce_fermeture_10s);
+    RUN_TEST(test_04_obstacle_fermeture_reouvre_avec_bip);
+    RUN_TEST(test_05_voiture_arretee_sous_barriere_pas_de_fermeture);
+    RUN_TEST(test_06_defaut_capteur_en_fermee_repli_ouvert);
+    RUN_TEST(test_07_rearmement_refuse_si_capteur_en_panne);
+    RUN_TEST(test_08_rearmement_accepte_apres_reparation);
+    RUN_TEST(test_09_arret_urgence_fige_et_reprise);
+    RUN_TEST(test_10_arret_urgence_rearmement_avec_defaut_capteur);
+    RUN_TEST(test_11_defaut_pendant_arret_urgence_reste_en_urgence);
     return UNITY_END();
 }
